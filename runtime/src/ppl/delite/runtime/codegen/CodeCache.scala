@@ -17,8 +17,8 @@ import collection.mutable.ListBuffer
  
 trait CodeCache {
 
-  protected val cacheHome = Config.codeCacheHome + File.separator + target + File.separator
-  protected val sourceCacheHome = cacheHome + "src" + File.separator
+  val cacheHome = Config.codeCacheHome + File.separator + target + File.separator
+  val sourceCacheHome = cacheHome + "src" + File.separator
   protected var modules = List.empty[Module]
 
   def cacheDegSources(directory: Directory) {

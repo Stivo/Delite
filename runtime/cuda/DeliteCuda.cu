@@ -1,3 +1,6 @@
+#ifndef _DELITE_CUDA_
+#define _DELITE_CUDA_
+
 #include <cuda_runtime.h>
 #include <list>
 #include <map>
@@ -148,3 +151,5 @@ void DeliteCudaMemcpyDtoDAsync(void *dptr, void* sptr, size_t size) {
 void DeliteCudaMemset(void *ptr, int value, size_t count) {
 	cudaMemset(ptr,value,count);
 }
+
+#endif

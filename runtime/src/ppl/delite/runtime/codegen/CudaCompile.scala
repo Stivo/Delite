@@ -30,11 +30,14 @@ object CudaCompile extends GPUCompile {
       "-I" + javaHome + sep + ".." + sep + "include" + "," + javaHome + sep + ".." + sep + "include" + sep + OS.jniMD, //jni
       "-I" + paths.mkString(","),
       "-I" + deliteHome + sep + "runtime" + sep + "cuda",
+      "-I" + "/home/hyouklee/cudpp/cudpp_src_2.0/include",
       "-O2", //optimized
       "-arch", "compute_20",
       "-code", "sm_20",
       "-shared", "-Xcompiler", "\'-fPIC\'", //dynamic shared library
       "-L" + deliteLibs) ++ linkGeneratedLibs(deliteLibs) ++ Array[String](
+      "-L" + "/home/hyouklee/cudpp/cudpp_src_2.0/lib",
+      "-lcudpp",
       "-o", "cudaHost.so", //output name
       source //input name
       )

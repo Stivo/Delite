@@ -11,6 +11,8 @@ trait GPUCompile extends CodeCache {
 
   private val sourceBuffer = new ArrayBuffer[(String, String)]
 
+  def sources = sourceBuffer.map(s => s._2)
+
   //def cmdString: Array[String]
 
   val sep = File.separator
@@ -31,10 +33,9 @@ trait GPUCompile extends CodeCache {
     cacheRuntimeSources(sourceBuffer.toArray)
 
     val paths = modules.map(m => Path(sourceCacheHome + m.name).path).toArray
-
-	  for (src <- sourceBuffer) {
-		  compile(binCacheHome, sourceCacheHome + "runtime" + File.separator + src._2 + "." + ext, paths)
-    }
+    
+    val sources = sourceBuffer.map(s => sourceCacheHome + "runtime" + File.separator + s._2 + "." + ext).mkString(" ")
+    compile(binCacheHome, sources, paths)
     sourceBuffer.clear()
   }
 
@@ -72,7 +73,7 @@ trait GPUCompile extends CodeCache {
     }
 
     if (process.exitValue != 0)
-      error(target + " host compilation failed with exirValue " + process.exitValue)
+      error(target + " host compilation failed with exit value " + process.exitValue)
   }
 
 
