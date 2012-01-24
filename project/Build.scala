@@ -60,7 +60,7 @@ object DeliteBuild extends Build {
   lazy val optimlApps = Project("optiml-apps", file("apps/optiml"), settings = virtBuildSettings) dependsOn(optiml)
   lazy val optiqlApps = Project("optiql-apps", file("apps/optiql"), settings = virtBuildSettings) dependsOn(optiql)
   lazy val interopApps = Project("interop-apps", file("apps/multi-dsl"), settings = virtBuildSettings) dependsOn(optiml, optiql) // dependsOn(dsls) not working
-  lazy val distributedApps = Project("distributed-apps", file("apps/distributed"), settings = virtBuildSettings) dependsOn(optiml)
+  lazy val distributedApps = Project("distributed-apps", file("apps/distributed"), settings = virtBuildSettings) dependsOn(distributed)
 
   lazy val runtime = Project("runtime", file("runtime"), settings = virtBuildSettings)
 
