@@ -50,15 +50,17 @@ object DeliteBuild extends Build {
 
   lazy val framework = Project("framework", file("framework"), settings = virtBuildSettings)
 
-  lazy val dsls = Project("dsls", file("dsls"), settings = virtBuildSettings) aggregate(optila, optiml, optiql) 
+ lazy val dsls = Project("dsls", file("dsls"), settings = virtBuildSettings) aggregate(optila, optiml, optiql, distributed) 
   lazy val optila = Project("optila", file("dsls/optila"), settings = virtBuildSettings) dependsOn(framework)
   lazy val optiml = Project("optiml", file("dsls/optiml"), settings = virtBuildSettings) dependsOn(optila)
   lazy val optiql = Project("optiql", file("dsls/optiql"), settings = virtBuildSettings) dependsOn(framework)
+  lazy val distributed = Project("distributed", file("dsls/distributed"), settings = virtBuildSettings) dependsOn(framework)
 
-  lazy val apps = Project("apps", file("apps"), settings = virtBuildSettings) aggregate(optimlApps, optiqlApps, interopApps)
+  lazy val apps = Project("apps", file("apps"), settings = virtBuildSettings) aggregate(optimlApps, optiqlApps, interopApps, distributedApps)
   lazy val optimlApps = Project("optiml-apps", file("apps/optiml"), settings = virtBuildSettings) dependsOn(optiml)
   lazy val optiqlApps = Project("optiql-apps", file("apps/optiql"), settings = virtBuildSettings) dependsOn(optiql)
   lazy val interopApps = Project("interop-apps", file("apps/multi-dsl"), settings = virtBuildSettings) dependsOn(optiml, optiql) // dependsOn(dsls) not working
+  lazy val distributedApps = Project("distributed-apps", file("apps/distributed"), settings = virtBuildSettings) dependsOn(optiml)
 
   lazy val runtime = Project("runtime", file("runtime"), settings = virtBuildSettings)
 
