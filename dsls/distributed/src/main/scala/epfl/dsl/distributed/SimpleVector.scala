@@ -120,9 +120,11 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
   
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = rhs match {
     case nv@NewVector(file) => stream.println("Vector created from file "+file+ " of type "+nv.mA.toString())
-    case vs@VectorSave(vector, file) => stream.println("Vector saved to file "+file+" of type "+vs.mA)
-    case map@VectorMap(vector, f) => stream.println("Vector mapped with "+f.toString()+" of type "+map.mA+" => "+map.mB)
-    case filter@VectorFilter(vector, f) => stream.println("Vector "+" of type "+filter.mA+" filtered with "+f.toString())
+    case vs@VectorSave(vector, file) => stream.println("Vector "+quote(vector)+" saved to file "+file+" of type "+vs.mA)
+    case map@VectorMap(vector, f) => stream.println("Vector "+quote(vector)+" mapped with "+f.toString()+" of type "+map.mA+" => "+map.mB)
+    case filter@VectorFilter(vector, f) => stream.println("Vector "+quote(vector)+" of type "+filter.mA+" filtered with "+f.toString())
+    case VectorReduceByKey(vector, f) => stream.println("Vector "+quote(vector)+" is reduced with "+f.toString)
+
     case _ => super.emitNode(sym, rhs)
   }
   
@@ -132,8 +134,10 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
     stream.println("package generated." + this.toString)
     stream.println("class kernel_" + kernelName + " {")
     //stream.print("def apply(")
+    
     stream.print(vals.map(p => quote(p) + ":" + remap(p.Type)).mkString(","))
-
+    stream.println()
+    stream.println("vals end, now vars")
     // variable name mangling
     if (vals.length > 0 && vars.length > 0){
       stream.print(", ")
@@ -142,6 +146,8 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
     if (vars.length > 0){
       stream.print(vars.map(v => quote(v) + ":" + "generated.scala.Ref[" + remap(v.Type) +"]").mkString(","))
     }
+    stream.println()
+    stream.println("now result type")
     if (resultIsVar){
       stream.print("): " + "generated.scala.Ref[" + resultType + "] = {")
     }
