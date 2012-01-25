@@ -121,8 +121,44 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = rhs match {
     case nv@NewVector(file) => stream.println("Vector created from file "+file+ " of type "+nv.mA.toString())
     case vs@VectorSave(vector, file) => stream.println("Vector saved to file "+file+" of type "+vs.mA)
+    case map@VectorMap(vector, f) => stream.println("Vector mapped with "+f.toString()+" of type "+map.mA+" => "+map.mB)
+    case filter@VectorFilter(vector, f) => stream.println("Vector "+" of type "+filter.mA+" filtered with "+f.toString())
     case _ => super.emitNode(sym, rhs)
   }
+  
+    override def emitKernelHeader(syms: List[Sym[Any]], vals: List[Sym[Any]], vars: List[Sym[Any]], resultType: String, resultIsVar: Boolean, external: Boolean)(implicit stream: PrintWriter): Unit = {
+    val kernelName = syms.map(quote).mkString("")
+    
+    stream.println("package generated." + this.toString)
+    stream.println("class kernel_" + kernelName + " {")
+    //stream.print("def apply(")
+    stream.print(vals.map(p => quote(p) + ":" + remap(p.Type)).mkString(","))
+
+    // variable name mangling
+    if (vals.length > 0 && vars.length > 0){
+      stream.print(", ")
+    }
+    // TODO: remap Ref instead of explicitly adding generated.scala
+    if (vars.length > 0){
+      stream.print(vars.map(v => quote(v) + ":" + "generated.scala.Ref[" + remap(v.Type) +"]").mkString(","))
+    }
+    if (resultIsVar){
+      stream.print("): " + "generated.scala.Ref[" + resultType + "] = {")
+    }
+    else {
+      stream.print("): " + resultType + " = {")
+    }
+
+    stream.println("")
+  }
+
+  override def emitKernelFooter(syms: List[Sym[Any]], vals: List[Sym[Any]], vars: List[Sym[Any]], resultType: String, resultIsVar: Boolean, external: Boolean)(implicit stream: PrintWriter): Unit = {
+    val kernelName = syms.map(quote).mkString("")
+    stream.println(kernelName)
+    stream.println("}}")
+  }
+
+  
 ////
 ////  override def remap[A](m: Manifest[A]): String = m.erasure.getSimpleName match {
 ////    case "Vector" => "Map[String,Any]"
