@@ -121,12 +121,14 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
   }
   
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = rhs match {
-    case nv@NewVector(file) => stream.println("Vector created from file "+file+ " of type "+nv.mA.toString())
+    case nv@NewVector(file) => emitValDef(sym, "Vector created from file "+file+ " of type "+nv.mA.toString())
     case vs@VectorSave(vector, file) => stream.println("Vector "+quote(vector)+" saved to file "+file+" of type "+vs.mA)
     case map@VectorMap(vector, f) => stream.println("Vector "+quote(vector)+" mapped with "+f.toString()+" of type "+map.mA+" => "+map.mB)
     case filter@VectorFilter(vector, f) => stream.println("Vector "+quote(vector)+" of type "+filter.mA+" filtered with "+f.toString())
     case VectorReduceByKey(vector, f) => stream.println("Vector "+quote(vector)+" is reduced with "+f.toString)
     case DeliteCollectionApply(vector, i) => emitValDef(sym, "Getting "+i+" from "+quote(vector))
+    //case StringSplit(s, sep, limit) => emitValDef(sym, "%s.split(%s, %s)".format(quote(s), quote(sep), quote(limit)))
+
     //case DeliteCollectionUnsafeSetData(vector, newVals) => stream.println("setting "+newVals.toString()+" in "+quote(vector))
     case _ => {printlog(sym.toString+ " "+rhs.toString+" not matched"); super.emitNode(sym, rhs)}
   }
@@ -135,7 +137,9 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
    * MultiLoop components
    */
   override def emitCollectElem(op: AbstractFatLoop, sym: Sym[Any], elem: DeliteCollectElem[_,_], prefixSym: String = "")(implicit stream: PrintWriter) {
-	  stream.println("collecting "+quote(getBlockResult(elem.func))+" with type "+quotetp(op.v))
+	  //emitNode(elem.func)
+	  //emitNode(elem.cond)
+      stream.println("collecting "+quote(getBlockResult(elem.func))+" with type "+quotetp(op.v)+ " on conditions "+elem.cond.map(quote(_)).mkString(", "))
 //    if (elem.cond.nonEmpty) {
 //      stream.print("if (" + elem.cond.map(c=>quote(getBlockResult(c))).mkString(" && ") + ") ")
 //      if (deliteKernel)

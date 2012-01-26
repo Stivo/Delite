@@ -23,7 +23,7 @@ trait VectorOps extends Variables {
   
   def infix_*[A:Manifest:Numeric](x: Rep[Vector[A]], y: Rep[A]) = scalarTimes(x,y)
   def infix_sum[A:Manifest:Numeric](x: Rep[Vector[A]]) = vectorSum(x)
-  def infix_filter[A:Manifest](x: Rep[Vector[A]]) = vectorFilter(x)
+//  def infix_filter[A:Manifest](x: Rep[Vector[A]]) = vectorFilter(x)
   
   def infix_length[A:Manifest](x: Rep[Vector[A]]) = length(x)
   def infix_apply[A:Manifest](x: Rep[Vector[A]], idx: Rep[Int]) = apply(x, idx)
@@ -37,7 +37,7 @@ trait VectorOps extends Variables {
   def vectorPlusScalar[A:Manifest:Numeric](x: Rep[Vector[A]], y: Rep[A]): Rep[Vector[A]]
   def scalarTimes[A:Manifest:Numeric](x: Rep[Vector[A]], y: Rep[A]): Rep[Vector[A]]
   def vectorSum[A:Manifest:Numeric](x: Rep[Vector[A]]): Rep[A]
-  def vectorFilter[A:Manifest](x: Rep[Vector[A]]): Rep[Vector[A]]
+//  def vectorFilter[A:Manifest](x: Rep[Vector[A]]): Rep[Vector[A]]
 
   
   def length[A:Manifest](x: Rep[Vector[A]]): Rep[Int]
@@ -104,7 +104,7 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
   def vectorPlusScalar[A:Manifest:Numeric](x: Exp[Vector[A]], y: Exp[A]) = VectorPlusScalar(x,y)
   def scalarTimes[A:Manifest:Numeric](x: Exp[Vector[A]], y: Exp[A]) = VectorTimesScalar(x, y)
   def vectorSum[A:Manifest:Numeric](x: Exp[Vector[A]]) = VectorSum(x)
-  def vectorFilter[A:Manifest](x: Exp[Vector[A]]) = VectorFilter(x)
+  //def vectorFilter[A:Manifest](x: Exp[Vector[A]]) = VectorFilter(x)
 
   def vectorPrint[A:Manifest](x: Exp[Vector[A]]) = reflectEffect(PPrint(x, reifyEffectsHere(pprint_impl(x))))
 
