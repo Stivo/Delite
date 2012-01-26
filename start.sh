@@ -10,7 +10,7 @@ export PROG="epfl.apps.distributed.WebLogAnalyzerRunner"
 set -e
 set -x
 
-sbt "project distributed-apps" compile
+sbtb "project distributed-apps" compile
 
 set +e
 pkill gedit
@@ -23,7 +23,7 @@ gedit generated/scala/kernels/* &
 
 cp $PROG.deg out.deg
 
-cd ../DegVisualizer/; sbt "run"; cd -; # -controlDeps
+cd ../DegVisualizer/; sbtb "run"; cd -; # -controlDeps
 
 dot -Tpng -o out.png out.dot && eog out.png &
 
