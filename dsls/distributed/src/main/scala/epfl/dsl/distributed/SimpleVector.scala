@@ -9,7 +9,9 @@ import _root_.ppl.delite.framework.codegen.scala.TargetScala
 import _root_.ppl.delite.framework.ops._
 import _root_.ppl.delite.framework.datastructures._
 import scala.virtualization.lms.internal.GenericFatCodegen
+import scala.virtualization.lms.internal.GraphVizExport
 import java.io.PrintWriter
+//import ppl.delite.framework.ops.DeliteCollectionApply
 //import scala.virtualization.lms.ppl.ScalaGenIO
 
 //
@@ -104,9 +106,9 @@ trait SimpleVectorCodegenBase extends GenericFatCodegen {
     }
   }
 }
-//
+
 trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVectorScalaCodeGenPkg
-  with ScalaGenDeliteOps with ScalaGenVariantsOps {
+  with ScalaGenDeliteOps with ScalaGenVariantsOps with ScalaGenDeliteCollectionOps {
 
   val IR: DeliteApplication with SimpleVectorExp
   import IR._
@@ -124,9 +126,28 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
     case map@VectorMap(vector, f) => stream.println("Vector "+quote(vector)+" mapped with "+f.toString()+" of type "+map.mA+" => "+map.mB)
     case filter@VectorFilter(vector, f) => stream.println("Vector "+quote(vector)+" of type "+filter.mA+" filtered with "+f.toString())
     case VectorReduceByKey(vector, f) => stream.println("Vector "+quote(vector)+" is reduced with "+f.toString)
-
-    case _ => super.emitNode(sym, rhs)
+    case DeliteCollectionApply(vector, i) => emitValDef(sym, "Getting "+i+" from "+quote(vector))
+    //case DeliteCollectionUnsafeSetData(vector, newVals) => stream.println("setting "+newVals.toString()+" in "+quote(vector))
+    case _ => {printlog(sym.toString+ " "+rhs.toString+" not matched"); super.emitNode(sym, rhs)}
   }
+
+    /**
+   * MultiLoop components
+   */
+  override def emitCollectElem(op: AbstractFatLoop, sym: Sym[Any], elem: DeliteCollectElem[_,_], prefixSym: String = "")(implicit stream: PrintWriter) {
+	  stream.println("collecting "+quote(getBlockResult(elem.func))+" with type "+quotetp(op.v))
+//    if (elem.cond.nonEmpty) {
+//      stream.print("if (" + elem.cond.map(c=>quote(getBlockResult(c))).mkString(" && ") + ") ")
+//      if (deliteKernel)
+//        stream.println(prefixSym + quote(sym) + "_buf_append(" + quote(getBlockResult(elem.func)) + ")")
+//      else
+//        stream.println("throw new RuntimeException(\"FIXME: buffer growing\")")
+//        //stream.println(prefixSym + quote(sym) + ".insert(" + prefixSym + quote(sym) + ".length, " + quote(getBlockResult(elem.func)) + ") // FIXME: buffer growing")
+//    } else {
+//      stream.println(prefixSym + quote(sym) + "_data(" + quote(op.v) + ") = " + quote(getBlockResult(elem.func)))
+//    }
+  }
+
   
     override def emitKernelHeader(syms: List[Sym[Any]], vals: List[Sym[Any]], vars: List[Sym[Any]], resultType: String, resultIsVar: Boolean, external: Boolean)(implicit stream: PrintWriter): Unit = {
     val kernelName = syms.map(quote).mkString("")
