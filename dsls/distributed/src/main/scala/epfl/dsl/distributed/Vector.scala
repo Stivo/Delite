@@ -78,6 +78,7 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
       //def copyBodyor
       val mA = manifest[A]
       val mB = manifest[B]
+      val mVB = manifest[Vector[B]]
     }
 
 	case class VectorFilter[A : Manifest](in : Exp[Vector[A]], cond : Exp[A] => Exp[Boolean]) extends DeliteOpFilter[A, A, Vector[A]] {
@@ -120,6 +121,18 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
     override def vector_save[A : Manifest](vector : Exp[Vector[A]], path : Exp[String]) = reflectEffect(VectorSave[A](vector, path)) //, manifest[A].erasure.asInstanceOf[Class[A]]))
     override def vector_reduceByKey[K: Manifest, V : Manifest](vector : Exp[Vector[(K,V)]], f : (Exp[V], Exp[V]) => Exp[V] ) = reflectPure(VectorReduceByKey(vector, f))
     override def dc_apply[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int])(implicit ctx: SourceContext): Exp[A] = reflectPure(DeliteCollectionApply(x,n))
+    
+    override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = (e match {
+	    case map@VectorMap(_, _) => reflectPure(new { override val original = Some(f,e) } with VectorMap(f(map.in), f(map.func))(mtype(map.mA), mtype(map.mB)))(mtype(map.mVB), ctx)
+	    
+	    case VectorSave(vector, path) => vector_save(f(vector), f(path))
+	    case StringIsEmpty(string) => reflectPure(StringIsEmpty(f(string)))(mtype(manifest[A]), implicitly[SourceContext])
+	    case StringTrim(string) => reflectPure(StringTrim(f(string)))
+	    //reflectMirrored(Reflect(DeliteCollectionApply(f(l),f(r)), mapOver(f,u), f(es)))(mtype(manifest[A]))
+	    case Reflect(VectorSave(vector, path), u, es) => printlog("mirror reflect vectorsave");reflectMirrored(Reflect(VectorSave(f(vector), f(path)), mapOver(f,u), f(es))) (mtype(manifest[A]))
+	    case _ => printlog("did not match "+e.toString); super.mirror(e, f)
+    }).asInstanceOf[Exp[A]]
+
     //def dc_apply[A:Manifest](x: Exp[Vector[A]], n: Exp[Int]) = reflectPure(DeliteCollectionApply(x,n))
    //def dc_apply(i: Rep[Int])(implicit ctx: SourceContext) = vector_apply(x,i)
 }

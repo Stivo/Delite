@@ -27,6 +27,12 @@ trait SandboxDeliteOpsExp extends BaseFatExp with EffectExp with VariablesExp wi
    */
   /*sealed*/ trait DeliteOp[A] extends Def[A] {
     type OpType <: DeliteOp[A]
+    /**
+     * The original is the same def before mirroring. If an original is available,
+     * the body can be transformed instead of being generated again.
+     * @see DeliteOpLoop#copyBodyOrElse
+     * TODO VJ document mirroring
+     **/
     def original: Option[(Transformer,Def[_])] = None // we should have type OpType, really but then it needs to be specified in mirror (why?)
     def copyOrElse[B](f: OpType => B)(e: => B): B = original.map(p=>f(p._2.asInstanceOf[OpType])).getOrElse(e)
     def copyTransformedOrElse[B](f: OpType => Exp[B])(e: => Exp[B]): Exp[B] = original.map(p=>p._1(f(p._2.asInstanceOf[OpType]))).getOrElse(e)
@@ -87,6 +93,10 @@ trait SandboxDeliteOpsExp extends BaseFatExp with EffectExp with VariablesExp wi
    */
   abstract class DeliteOpLoop[A] extends AbstractLoop[A] with DeliteOp[A] {
     type OpType <: DeliteOpLoop[A]
+    /**
+     * Helper for the body of a DeliteOpLoop. The body is either created from the
+     * argument, or transformed from the field original.
+     */
     def copyBodyOrElse(e: => Def[A]): Def[A] = original.map(p=>mirrorLoopBody(p._2.asInstanceOf[OpType].body,p._1)).getOrElse(e)
     final lazy val v: Sym[Int] = copyTransformedOrElse(_.v)(fresh[Int]).asInstanceOf[Sym[Int]]
   }

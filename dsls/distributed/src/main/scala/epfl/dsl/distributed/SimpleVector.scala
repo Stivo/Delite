@@ -112,7 +112,7 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
 
   val IR: DeliteApplication with SimpleVectorExp
   import IR._
-  
+
   //these methods translates types in the compiler to types in the generated code
   override def dsmap(line: String) : String = {
     var res = line.replaceAll("ppl.dsl.assignment2.datastructures", "generated")
@@ -126,7 +126,7 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
     case map@VectorMap(vector, f) => stream.println("Vector "+quote(vector)+" mapped with "+f.toString()+" of type "+map.mA+" => "+map.mB)
     case filter@VectorFilter(vector, f) => stream.println("Vector "+quote(vector)+" of type "+filter.mA+" filtered with "+f.toString())
     case VectorReduceByKey(vector, f) => stream.println("Vector "+quote(vector)+" is reduced with "+f.toString)
-    case DeliteCollectionApply(vector, i) => emitValDef(sym, "Getting "+i+" from "+quote(vector))
+    case DeliteCollectionApply(vector, i) => emitValDef(sym, "Getting "+i+" from "+quote(vector) +" "+quotetp(sym))
     //case StringSplit(s, sep, limit) => emitValDef(sym, "%s.split(%s, %s)".format(quote(s), quote(sep), quote(limit)))
 
     //case DeliteCollectionUnsafeSetData(vector, newVals) => stream.println("setting "+newVals.toString()+" in "+quote(vector))
@@ -139,7 +139,9 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
   override def emitCollectElem(op: AbstractFatLoop, sym: Sym[Any], elem: DeliteCollectElem[_,_], prefixSym: String = "")(implicit stream: PrintWriter) {
 	  //emitNode(elem.func)
 	  //emitNode(elem.cond)
-      stream.println("collecting "+quote(getBlockResult(elem.func))+" with type "+quotetp(op.v)+ " on conditions "+elem.cond.map(quote(_)).mkString(", "))
+	  val result = getBlockResult(elem.func)
+	  stream.println("loop "+quote(op.v))
+      stream.println("collecting "+quote(result)+" into "+quote(sym)+" of type "+quotetp(sym)+" on conditions "+elem.cond.map(quote(_)).mkString(", "))
 //    if (elem.cond.nonEmpty) {
 //      stream.print("if (" + elem.cond.map(c=>quote(getBlockResult(c))).mkString(" && ") + ") ")
 //      if (deliteKernel)
@@ -189,7 +191,6 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
     stream.println("}}")
   }
 
-  
 ////
 ////  override def remap[A](m: Manifest[A]): String = m.erasure.getSimpleName match {
 ////    case "Vector" => "Map[String,Any]"
