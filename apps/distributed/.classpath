@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" output="target/scala-2.10.0-virtualized-SNAPSHOT/classes" path="src/main/scala"/>
+	<classpathentry kind="src" path="src/main/scala"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_COMPILER_CONTAINER"/>
-	<classpathentry kind="lib" path="/home/stivo/master/Delite/lib_managed/jars/EPFL/lms_2.10.0-virtualized-SNAPSHOT/lms_2.10.0-virtualized-SNAPSHOT-0.1.jar"/>
 	<classpathentry kind="lib" path="/home/stivo/master/Delite/lib_managed/jars/org.scalatest/scalatest_2.10.0-virtualized-SNAPSHOT/scalatest_2.10.0-virtualized-SNAPSHOT-1.6.1-SNAPSHOT.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/distributed"/>

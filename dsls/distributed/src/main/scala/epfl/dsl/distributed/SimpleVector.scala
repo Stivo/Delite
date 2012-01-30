@@ -128,7 +128,7 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
     case VectorReduceByKey(vector, f) => stream.println("Vector "+quote(vector)+" is reduced with "+f.toString)
     case DeliteCollectionApply(vector, i) => emitValDef(sym, "Getting "+i+" from "+quote(vector) +" "+quotetp(sym))
     //case StringSplit(s, sep, limit) => emitValDef(sym, "%s.split(%s, %s)".format(quote(s), quote(sep), quote(limit)))
-
+    case Reify(s, _, _) => emitValDef(sym, quote(s))
     //case DeliteCollectionUnsafeSetData(vector, newVals) => stream.println("setting "+newVals.toString()+" in "+quote(vector))
     case _ => {printlog(sym.toString+ " "+rhs.toString+" not matched"); super.emitNode(sym, rhs)}
   }

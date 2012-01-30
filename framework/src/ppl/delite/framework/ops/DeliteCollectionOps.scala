@@ -110,7 +110,7 @@ trait BaseGenDeliteCollectionOps extends GenericFatCodegen {
   import IR._
 
   override def unapplySimpleIndex(e: Def[Any]) = e match { // TODO: move elsewhere
-    case DeliteCollectionApply(a, i) => Some((a,i))
+  	case DeliteCollectionApply(a, i) => Some((a,i))
     case _ => super.unapplySimpleIndex(e)
   }
 }

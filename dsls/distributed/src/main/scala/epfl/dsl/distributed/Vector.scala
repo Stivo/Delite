@@ -107,6 +107,7 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
 	   def alloc = vector_new(unit("mapalloc"))
 
       val mA = manifest[A]
+      val mVA = manifest[Vector[A]]
     }
 
     case class VectorSave[A : Manifest](vector : Exp[Vector[A]], path : Rep[String]) extends Def[Unit] {
@@ -124,15 +125,30 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
     
     override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = (e match {
 	    case map@VectorMap(_, _) => reflectPure(new { override val original = Some(f,e) } with VectorMap(f(map.in), f(map.func))(mtype(map.mA), mtype(map.mB)))(mtype(map.mVB), ctx)
-	    
+	    case filter@VectorFilter(_, _) => reflectPure( new { override val original = Some(f,e) } with VectorFilter(f(filter.in), f(filter.cond))(mtype(manifest[A])))(mtype(filter.mVA), ctx)
 	    case VectorSave(vector, path) => vector_save(f(vector), f(path))
-	    case StringIsEmpty(string) => reflectPure(StringIsEmpty(f(string)))(mtype(manifest[A]), implicitly[SourceContext])
+	    case StringIsEmpty(string) => reflectPure(StringIsEmpty(f(string)))(mtype(manifest[A]), ctx)
 	    case StringTrim(string) => reflectPure(StringTrim(f(string)))
+	    case StringContains(string, sub) => reflectPure(StringContains(f(string), f(sub)))
+	    case StringStartsWith(string, start) => reflectPure(StringStartsWith(f(string), f(start)))
 	    //reflectMirrored(Reflect(DeliteCollectionApply(f(l),f(r)), mapOver(f,u), f(es)))(mtype(manifest[A]))
-	    case Reflect(VectorSave(vector, path), u, es) => printlog("mirror reflect vectorsave");reflectMirrored(Reflect(VectorSave(f(vector), f(path)), mapOver(f,u), f(es))) (mtype(manifest[A]))
+	    case Reflect(filter@VectorFilter(in, cond), u, es) => 
+	      reflectMirrored(Reflect(new { override val original = Some(f,e) } with VectorFilter(f(filter.in), f(filter.cond))(mtype(manifest[A])), mapOver(f, u), f(es)))(mtype(filter.mVA))
+	    case Reflect(VectorSave(vector, path), u, es) => printlog("mirror reflect vectorsave");
 	    case _ => printlog("did not match "+e.toString); super.mirror(e, f)
     }).asInstanceOf[Exp[A]]
-
+    /*
+     * Fusion State:
+     * General:
+     * - Creates output collections which are not used
+     * - problem with reify: emitting now valDef for it, otherwise after fusion wrong value is used
+     * Can fuse:
+     * - map with map
+     * - map with filter
+     * can not fuse:
+     * - filter with filter: Condition does not get put into second filter.becomes Vector[Vector[A]]
+     * - filter with Map: Condition gets evaluated but for wrong output collection
+     */
     //def dc_apply[A:Manifest](x: Exp[Vector[A]], n: Exp[Int]) = reflectPure(DeliteCollectionApply(x,n))
    //def dc_apply(i: Rep[Int])(implicit ctx: SourceContext) = vector_apply(x,i)
 }
