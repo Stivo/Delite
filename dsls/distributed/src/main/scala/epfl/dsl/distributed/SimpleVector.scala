@@ -121,18 +121,42 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
   }
   
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = rhs match {
-    case nv@NewVector(file) => emitValDef(sym, "Vector created from file "+file+ " of type "+nv.mA.toString())
-    case vs@VectorSave(vector, file) => stream.println("Vector "+quote(vector)+" saved to file "+file+" of type "+vs.mA)
-    case map@VectorMap(vector, f) => stream.println("Vector "+quote(vector)+" mapped with "+f.toString()+" of type "+map.mA+" => "+map.mB)
-    case filter@VectorFilter(vector, f) => stream.println("Vector "+quote(vector)+" of type "+filter.mA+" filtered with "+f.toString())
+    case nv@NewVector(file) => emitValDef(sym, "Vector created from file "+file.toString+ " of type "+nv.mA.toString())
+    case vs@VectorSave(vector, file) => stream.println("Vector " +quote(vector)+" saved to file "+file.toString+" of type "+vs.mA.toString)
     case VectorReduceByKey(vector, f) => stream.println("Vector "+quote(vector)+" is reduced with "+f.toString)
-    case DeliteCollectionApply(vector, i) => emitValDef(sym, "Getting "+i+" from "+quote(vector) +" "+quotetp(sym))
+    case DeliteCollectionApply(vector, i) => emitValDef(sym, "Getting " +i.toString+" from "+quote(vector) +" "+quotetp(sym))
     //case StringSplit(s, sep, limit) => emitValDef(sym, "%s.split(%s, %s)".format(quote(s), quote(sep), quote(limit)))
     case Reify(s, _, _) => emitValDef(sym, quote(s))
     //case DeliteCollectionUnsafeSetData(vector, newVals) => stream.println("setting "+newVals.toString()+" in "+quote(vector))
     case _ => {printlog(sym.toString+ " "+rhs.toString+" not matched"); super.emitNode(sym, rhs)}
   }
-
+  
+  override def unapplySimpleDomain(e: Def[Int]): Option[Exp[Any]] = {
+   printlog("unapplySimpleDomain called with "+e.toString)
+   printRelevantStack
+  e match {
+    case DeliteCollectionSize(sym) => Some(sym)
+    case Reflect(DeliteCollectionSize(sym), _ , _) => Some(sym)
+    case _ => super.unapplySimpleDomain(e)
+  }
+  }
+  override def unapplySimpleCollectIf(e: Def[Any]) = {
+   printlog("unapplySimpleCollectIf called with "+e.toString)
+   printRelevantStack
+   e match {
+    case e: DeliteCollectElem[_,_] => Some((e.func, e.cond))
+//    case e: DeliteReduceElem[_] => Some((e.func, e.cond)) // TODO: aks -- testing fusing conditionals for reduce elems
+    case _ => super.unapplySimpleCollectIf(e)
+  }
+  }
+  def printRelevantStack {
+//    printlog("-------------")
+//     val stackInfo = java.lang.Thread.currentThread().getStackTrace()
+//    def toString(elem : StackTraceElement) = elem.getClassName()+": "+elem.getLineNumber()+" "+elem.getMethodName()
+//    val out = stackInfo.filter {x=> val clas = x.getClassName(); true || clas.contains("distributed") || clas.contains("LoopFusionOpt")}.map(toString(_)).mkString("\n")
+//    printlog(out)
+//    printlog("-------------")
+  }
     /**
    * MultiLoop components
    */
@@ -142,6 +166,7 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
 	  val result = getBlockResult(elem.func)
 	  stream.println("loop "+quote(op.v))
       stream.println("collecting "+quote(result)+" into "+quote(sym)+" of type "+quotetp(sym)+" on conditions "+elem.cond.map(quote(_)).mkString(", "))
+      super.emitCollectElem(op, sym, elem, prefixSym)
 //    if (elem.cond.nonEmpty) {
 //      stream.print("if (" + elem.cond.map(c=>quote(getBlockResult(c))).mkString(" && ") + ") ")
 //      if (deliteKernel)

@@ -13,7 +13,7 @@ import scala.reflect.SourceContext
 
 trait Vector[A] extends DeliteCollection[A] {
   //val elementType : Class[A]
- 
+
 }
 
 trait VectorOps extends Variables {
@@ -27,7 +27,8 @@ trait VectorOps extends Variables {
     class vecOpsCls[A:Manifest](vector: Rep[Vector[A]]) {
     	def map[B:Manifest](f: Rep[A] => Rep[B]) = vector_map(vector,f)
 		def filter(f: Rep[A] => Rep[Boolean]) = vector_filter(vector,f)
-		def save[A : Manifest](path : Rep[String]) = vector_save(vector, path)
+		def save(path : Rep[String]) = vector_save(vector, path)
+		def length = dc_length(vector)
     }
 
     class vecTupleOpsCls[K: Manifest, V : Manifest](x: Rep[Vector[(K,V)]]) {
@@ -41,6 +42,9 @@ trait VectorOps extends Variables {
     def vector_filter[A : Manifest](vector : Rep[Vector[A]], f: Rep[A] => Rep[Boolean]) : Rep[Vector[A]]
     def vector_save[A : Manifest](vector : Rep[Vector[A]], path : Rep[String]) : Rep[Unit]
     def vector_reduceByKey[K: Manifest, V : Manifest](vector : Rep[Vector[(K,V)]], f : (Rep[V], Rep[V]) => Rep[V] ) : Rep[Vector[(K, V)]]
+
+    def dc_length[A:Manifest](x: Rep[DeliteCollection[A]])(implicit ctx: SourceContext): Rep[Int]
+
     //def vector_apply[A:Manifest](x: Rep[Vector[A]], n: Rep[Int])(implicit ctx: SourceContext) : Rep[A]
 }
 
@@ -56,7 +60,8 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
        extends DeliteOpMap[A, B, Vector[B]] {
       type CB = Vector[B]
 //      def convert 
-      lazy val size = Const(1); //throw new UnsupportedOperationException()
+      val size = copyTransformedOrElse(_.size)(in.length)
+      //lazy val size = Const(1); //throw new UnsupportedOperationException()
       override lazy val body: Def[CB] = copyBodyOrElse(DeliteCollectElem[B, CB](
       aV = this.aV,
       alloc = null,
@@ -84,7 +89,8 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
 	case class VectorFilter[A : Manifest](in : Exp[Vector[A]], cond : Exp[A] => Exp[Boolean]) extends DeliteOpFilter[A, A, Vector[A]] {
        type CB = Vector[A]
 //      def convert 
-      lazy val size = Const(1); //throw new UnsupportedOperationException()
+      val size = copyTransformedOrElse(_.size)(in.length)
+     // lazy val size = Const(1); //throw new UnsupportedOperationException()
       def func = e => e
       override lazy val body: Def[CB] = copyBodyOrElse(DeliteCollectElem[A, CB](
       aV = this.aV,
@@ -92,16 +98,6 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
       func = reifyEffects(this.func(dc_apply(in,v))),
       cond = reifyEffects(this.cond(dc_apply(in,v)))::Nil
     ))
-
-//    override lazy val body: Def[Unit] = copyBodyOrElse(DeliteForeachElem(
-//      func = reifyEffects(this.func(this.convert(v))),
-//      sync = unit(List())
-//    ))
-//       override lazy val body: Def[CB] = copyBodyOrElse(DeliteCollectElem[B, CB](
-//      //alloc = reifyEffects(this.alloc),
-//       alloc = reifyEffects(Vector[B]("mapAlloc")),
-//      func = reifyEffects(this.func(v))
-//    ))
 
    // Members declared in ppl.delite.framework.ops.DeliteOpsExp.DeliteOpMap
 	   def alloc = vector_new(unit("mapalloc"))
@@ -122,8 +118,14 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
     override def vector_save[A : Manifest](vector : Exp[Vector[A]], path : Exp[String]) = reflectEffect(VectorSave[A](vector, path)) //, manifest[A].erasure.asInstanceOf[Class[A]]))
     override def vector_reduceByKey[K: Manifest, V : Manifest](vector : Exp[Vector[(K,V)]], f : (Exp[V], Exp[V]) => Exp[V] ) = reflectPure(VectorReduceByKey(vector, f))
     override def dc_apply[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int])(implicit ctx: SourceContext): Exp[A] = reflectPure(DeliteCollectionApply(x,n))
+    override def dc_length[A:Manifest](x: Exp[DeliteCollection[A]])(implicit ctx: SourceContext): Exp[Int] = reflectPure(DeliteCollectionSize(x))
     
-    override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = (e match {
+    override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = {
+    	if (f.isInstanceOf[SubstTransformer]) {
+    	  printlog("Transformer has map "+(f.asInstanceOf[SubstTransformer].subst))
+    	}
+    	val out =
+    (e match {
 	    case map@VectorMap(_, _) => reflectPure(new { override val original = Some(f,e) } with VectorMap(f(map.in), f(map.func))(mtype(map.mA), mtype(map.mB)))(mtype(map.mVB), ctx)
 	    case filter@VectorFilter(_, _) => reflectPure( new { override val original = Some(f,e) } with VectorFilter(f(filter.in), f(filter.cond))(mtype(manifest[A])))(mtype(filter.mVA), ctx)
 	    case VectorSave(vector, path) => vector_save(f(vector), f(path))
@@ -131,12 +133,22 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
 	    case StringTrim(string) => reflectPure(StringTrim(f(string)))
 	    case StringContains(string, sub) => reflectPure(StringContains(f(string), f(sub)))
 	    case StringStartsWith(string, start) => reflectPure(StringStartsWith(f(string), f(start)))
+	    case SimpleLoop(size, sym, body) => reflectPure(SimpleLoop(f(size), f(sym).asInstanceOf[Sym[Int]], mirrorLoopBody(body, f)))
 	    //reflectMirrored(Reflect(DeliteCollectionApply(f(l),f(r)), mapOver(f,u), f(es)))(mtype(manifest[A]))
 	    case Reflect(filter@VectorFilter(in, cond), u, es) => 
 	      reflectMirrored(Reflect(new { override val original = Some(f,e) } with VectorFilter(f(filter.in), f(filter.cond))(mtype(manifest[A])), mapOver(f, u), f(es)))(mtype(filter.mVA))
-	    case Reflect(VectorSave(vector, path), u, es) => printlog("mirror reflect vectorsave");
+	    case Reflect(VectorSave(vector, path), u, es) => {printlog("mirror reflect vectorsave"); reflectMirrored(Reflect(VectorSave(f(vector), f(path)), mapOver(f,u), f(es))) (mtype(manifest[A]))}
 	    case _ => printlog("did not match "+e.toString); super.mirror(e, f)
-    }).asInstanceOf[Exp[A]]
+    });
+    	printlog(e)
+    	printlog(" becomes ==> ")
+    	printlog(out match {
+    	  case Def(s) => s.toString
+    	  case _ => "not a def"
+    	})
+    	out.asInstanceOf[Exp[A]]
+    	}
+    
     /*
      * Fusion State:
      * General:
