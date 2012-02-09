@@ -24,6 +24,8 @@ object DeliteBuild extends Build {
     retrieveManaged := true,
     scalacOptions += "-Yno-generic-signatures",
     scalacOptions += "-Yvirtualize"
+    unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_)),
+    unmanagedSourceDirectories in Test := Nil
   )
 
   val virtBuildSettings = virtBuildSettingsBase ++ Seq(
@@ -77,7 +79,9 @@ object DeliteBuild extends Build {
     scalaSource := file("tests/main-src"),
     scalaSource in Test := file("tests/src"),
     libraryDependencies += scalatest,
-    parallelExecution in Test := false
+    parallelExecution in Test := false,
+    unmanagedSourceDirectories in Compile := Nil,
+    unmanagedSourceDirectories in Test <<= (scalaSource in Test)(Seq(_))
     // don't appear to be able to depend on a different scala version simultaneously, so just using scala-virtualized for everything
   )) dependsOn(framework, runtime, optiml, optimlApps, runtime)
   

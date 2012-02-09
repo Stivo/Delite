@@ -16,6 +16,8 @@ trait Vector[A] extends DeliteCollection[A]
 trait VectorOps extends Variables {
   this: SimpleVector =>
     
+  implicit def intUnit(a: Int) = unit(a)
+    
   //syntax
   def Vector[A:Manifest](length: Rep[Int]) = vectorNew(length)
   def infix_+[A:Manifest:Numeric](x: Rep[Vector[A]], y: Rep[Vector[A]]) = vectorPlus(x,y)

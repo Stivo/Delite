@@ -25,3 +25,6 @@ test-out/*/*-log
 test-out/*/*-skel
 test-out/*/*-src
 dsls/deliszt/lisztlib
+.project
+.classpath
+.settings
