@@ -19,25 +19,27 @@ trait OptiLACudaGenExternal extends CudaGenExternalBase with CudaGenDataStruct {
   import IR._
   
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = rhs match {
-    case e@MatrixTimesVectorBLAS(x,y) =>
+    case e@DenseMatrixTimesVectorBLAS(x,y) =>
       val lib = cuBLAS
       val args = scala.List("'t'", "%1$s.numCols", "%1$s.numRows", "%1$s.data", "%2$s.data", "%3$s.data")
                  .map { _.format(quote(getBlockResult(x)), quote(getBlockResult(y)), quote(sym)) }
-      emitMethodCall(e, lib, args)
-      emitVectorAlloc(sym,"%s.numRows".format(quote(getBlockResult(x))),"false",false)
+      emitMethodCall(sym, e, lib, args)
+      //emitVectorAlloc(sym,"%s.numRows".format(quote(getBlockResult(x))),"false",false)
+      registerKernel(scala.List(sym))
 
-    case e@MatrixMultiplyBLAS(x,y) =>
+    case e@DenseMatrixMultiplyBLAS(x,y) =>
       val lib = cuBLAS
       val args = scala.List("'n'", "'n'", "%2$s.numCols", "%1$s.numRows", "%2$s.numRows", "1.0", "%2$s.data", "%2$s.numCols", "%1$s.data", "%1$s.numCols", "0.0", "%3$s.data", "%3$s.numCols")
                  .map { _.format(quote(getBlockResult(x)), quote(getBlockResult(y)), quote(sym)) }
-      emitMethodCall(e, lib, args)
-      emitMatrixAlloc(sym,"%s.numRows".format(quote(getBlockResult(x))),"%s.numCols".format(quote(getBlockResult(y))),false)
+      emitMethodCall(sym, e, lib, args)
+      //emitMatrixAlloc(sym,"%s.numRows".format(quote(getBlockResult(x))),"%s.numCols".format(quote(getBlockResult(y))),false)
+      registerKernel(scala.List(sym))
 
     case _ => super.emitNode(sym, rhs)
   }
     
   override def emitExternalLib(rhs: Def[Any]): Unit = rhs match {
-    case e@MatrixTimesVectorBLAS(x,y) =>
+    case e@DenseMatrixTimesVectorBLAS(x,y) =>
       val lib = cuBLAS
       val tp = e.m.toString.toLowerCase
       val func = tp match {
@@ -52,7 +54,7 @@ trait OptiLACudaGenExternal extends CudaGenExternalBase with CudaGenDataStruct {
   %1$s(transpose, mat_col, mat_row, 1.0, mat1, mat_col, vec2, 1, 0.0, vec3, 1);
 }""".format(func))
 
-   case e@MatrixMultiplyBLAS(x,y) =>
+   case e@DenseMatrixMultiplyBLAS(x,y) =>
       val lib = cuBLAS
       val tp = e.m.toString.toLowerCase
       val func = tp match {

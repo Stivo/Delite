@@ -48,7 +48,7 @@ trait DeliteApplication extends DeliteOpsExp with ScalaCompile {
 
   
   final def main(args: Array[String]) {
-    println("Delite Application Being Staged:[" + this.getClass.getSimpleName + "]")
+    println("Delite Application Being Staged:[" + this.getClass.getName + "]")
 
     println("******Generating the program******")
 
@@ -80,11 +80,13 @@ trait DeliteApplication extends DeliteOpsExp with ScalaCompile {
       g.initializeGenerator(baseDir + "kernels" + File.separator)
     }
 
-    if (Config.degFilename.endsWith(".deg")) {
-      val streamScala = new PrintWriter(new FileWriter(Config.degFilename.replace(".deg",".scala")))
-      codegen.emitSource(liftedMain, "Application", streamScala) // whole scala application (for testing)
-      // TODO: dot output
-      reset
+    if (Config.debug) {
+      if (Config.degFilename.endsWith(".deg")) {
+        val streamScala = new PrintWriter(new FileWriter(Config.degFilename.replace(".deg",".scala")))
+        codegen.emitSource(liftedMain, "Application", streamScala) // whole scala application (for testing)
+        // TODO: dot output
+        reset
+      }
     }
     deliteGenerator.initializeGenerator(Config.buildDir)
     val sd = deliteGenerator.emitSource(liftedMain, "Application", stream)    
@@ -109,7 +111,7 @@ trait DeliteApplication extends DeliteOpsExp with ScalaCompile {
 
 
   final def execute(args: Array[String]) {
-    println("Delite Application Being Executed:[" + this.getClass.getSimpleName + "]")
+    println("Delite Application Being Executed:[" + this.getClass.getName + "]")
 
     println("******Executing the program*********")
     globalDefs = List()

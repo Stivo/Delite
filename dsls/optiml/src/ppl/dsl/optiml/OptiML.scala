@@ -1,9 +1,10 @@
 package ppl.dsl.optiml
 
 import java.io._
+import scala.reflect.SourceContext
 import scala.virtualization.lms.common._
 import scala.virtualization.lms.internal.{GenericFatCodegen, GenericCodegen}
-import ppl.delite.framework.{Config, DeliteApplication}
+import ppl.delite.framework.{Config, DeliteApplication, DeliteInteractive, DeliteInteractiveRunner}
 import ppl.delite.framework.codegen.Target
 import ppl.delite.framework.codegen.scala.TargetScala
 import ppl.delite.framework.codegen.cuda.TargetCuda
@@ -14,7 +15,7 @@ import ppl.delite.framework.ops._
 import ppl.delite.framework.datastructures._
 
 import ppl.dsl.optila.{OptiLAApplication}
-import ppl.dsl.optila.{OptiLAScalaOpsPkg, OptiLAScalaOpsPkgExp, OptiLA, OptiLAExp, OptiLACompiler, OptiLALift}
+import ppl.dsl.optila.{OptiLAScalaOpsPkg, OptiLAScalaOpsPkgExp, OptiLA, OptiLAExp, OptiLACompiler, OptiLALift, OptiLAUtilities}
 import ppl.dsl.optila.{OptiLAScalaCodeGenPkg, OptiLACudaCodeGenPkg, OptiLAOpenCLCodeGenPkg, OptiLACCodeGenPkg, OptiLACodeGenBase, OptiLACodeGenScala, OptiLACodeGenCuda, OptiLACodeGenOpenCL, OptiLACodeGenC}
 
 import ppl.dsl.optiml.io._
@@ -45,6 +46,20 @@ trait OptiMLLibrary extends OptiMLKmeans with OptiMLLinReg {
   this: OptiMLApplication with OptiMLLift =>
 }
 
+
+trait OptiMLInteractive extends OptiMLApplication with DeliteInteractive
+
+trait OptiMLInteractiveRunner extends OptiMLApplicationRunner with DeliteInteractiveRunner
+
+object OptiML {
+  def apply[R](b: => R) = new Scope[OptiMLInteractive, OptiMLInteractiveRunner, R](b)
+}
+
+
+
+
+
+
 /**
  * These are the portions of Scala imported into OptiML's scope.
  */
@@ -71,7 +86,7 @@ trait OptiMLCCodeGenPkg extends OptiLACCodeGenPkg
 /**
  * This is the trait that every OptiML application must extend.
  */
-trait OptiML extends OptiLA with OptiMLScalaOpsPkg with RecordOps
+trait OptiML extends OptiMLScalaOpsPkg with OptiLA with RecordOps
   with LanguageOps with ApplicationOps with LBPOps // TODO: LBPOps should be auto-generated with ApplicationOps
   with MLInputReaderOps with MLOutputWriterOps
   with CanSumOps
@@ -85,7 +100,7 @@ trait OptiML extends OptiLA with OptiMLScalaOpsPkg with RecordOps
 }
 
 // these ops are only available to the compiler (they are restricted from application use)
-trait OptiMLCompiler extends OptiML with DeliteCollectionOps with RangeOps with IOOps with SeqOps with SetOps
+trait OptiMLCompiler extends OptiLACompiler with OptiML with OptiMLUtilities with DeliteCollectionOps with RangeOps with IOOps with SeqOps with SetOps
   with ListOps with HashMapOps with IterableOps {
 
   this: OptiMLApplication with OptiMLExp =>
@@ -95,7 +110,7 @@ trait OptiMLCompiler extends OptiML with DeliteCollectionOps with RangeOps with 
 /**
  * These are the corresponding IR nodes for OptiML.
  */
-trait OptiMLExp extends OptiLAExp with OptiMLCompiler with OptiMLUtilities with OptiMLScalaOpsPkgExp with RecordOpsExp
+trait OptiMLExp extends OptiLAExp with OptiMLCompiler with OptiMLScalaOpsPkgExp with RecordOpsExp
   with LanguageOpsExp with ApplicationOpsExp with LBPOpsExp 
   with MLInputReaderOpsExp with MLOutputWriterOpsExp
   with VectorOpsExpOpt with MatrixOpsExpOpt with IndexVectorOpsExp with IndexVectorDenseOpsExpOpt with IndexVectorRangeOpsExp with IndexVector2OpsExp 
@@ -115,19 +130,20 @@ trait OptiMLExp extends OptiLAExp with OptiMLCompiler with OptiMLUtilities with 
       case _:TargetCuda => new OptiMLCodeGenCuda{val IR: OptiMLExp.this.type = OptiMLExp.this}
       case _:TargetOpenCL => new OptiMLCodeGenOpenCL{val IR: OptiMLExp.this.type = OptiMLExp.this}
       case _:TargetC => new OptiMLCodeGenC{val IR: OptiMLExp.this.type = OptiMLExp.this} 
-      case _ => throw new RuntimeException("optiml does not support this target")
+      case _ => err("optiml does not support this target")
     }
   }
 
 }
 
 
-trait OptiMLUtilities {
-  def error(s: String) = {
+trait OptiMLUtilities extends OptiLAUtilities {
+  override def err(s: String)(implicit ctx: SourceContext) = {
     println("[optiml error]: " + s)
+    println("  at " + (ctx.fileName.split("/").last + ":" + ctx.line).mkString("//").mkString(";"))
     exit(1)
   }
-  def warn(s: String) = println("[optiml warning]: " + s)
+  override def warn(s: String) = println("[optiml warning]: " + s)
 }
 
 
