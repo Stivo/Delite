@@ -1,4 +1,0 @@
-#!/bin/bash
-set -x
-
-$JAVA_HOME/bin/java -Dlms.verbosity=2 -server $JAVA_OPTS -cp $LMS_HOME/target/scala-2.10/classes:$LMS_HOME/*:$DELITE_HOME/framework/target/scala-2.10/classes:$DELITE_HOME/dsls/distributed/target/scala-2.10/classes:$DELITE_HOME/dsls/optiml/target/scala-2.10/classes:$DELITE_HOME/dsls/optila/target/scala-2.10/classes:$DELITE_HOME/apps/optiml/target/scala-2.10/classes:$DELITE_HOME/apps/optila/target/scala-2.10/classes:$DELITE_HOME/apps/optiql/target/scala-2.10/classes:$DELITE_HOME/tests/target/scala-2.10/classes:$DELITE_HOME/apps/distributed/target/scala-2.10/classes:$DELITE_HOME/target/scala-2.10/test-classes/:$SCALA_VIRT_HOME/lib/scala-library.jar:$SCALA_VIRT_HOME/lib/scala-compiler.jar:$SCALA_VIRT_HOME/* "$@" 2> $DELITE_HOME/delitec.log
